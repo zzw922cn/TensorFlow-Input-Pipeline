@@ -32,4 +32,5 @@ Well, if your dataset is not large enough, you can totally load your dataset onc
 pass
 ```
 
+## Contact Me
 For any questions, welcome to send email to :**zzw922cn@gmail.com**. If you use wechat, you can follow me by searching wechat public media id:**deeplearningdigest**, I would push several articles every week to share my deep learning practices with you. Thanks!
