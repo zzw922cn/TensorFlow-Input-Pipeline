@@ -1,9 +1,9 @@
 # TensorFlow-Input-Pipeline
 Input Pipeline Examples based on multi-threads and FIFOQueue in TensorFlow, including mini-batching training.
 
-## Result
+## Usage
 
-[-] Run `python big_input.py`, you can get:
+If your dataset is too large to load once, you can first convert your dataset to TFRecords files, my example code shows how to write data into TFRecords and how to read data from TFRecords correctly. You can run the example code `python big_input.py`, and you'll see following result:
 
 ```
 [array([ 6, 10], dtype=int32), array([[[ 1. ,  2.1,  3.5],
@@ -15,7 +15,7 @@ Input Pipeline Examples based on multi-threads and FIFOQueue in TensorFlow, incl
         [ 4. ,  5.5,  6. ]]])]
 ```
 
-[-] Run `python small_input.py`, you can get:
+Well, if your dataset is not large enough, you can totally load your dataset once and then use FIFOQueue to improve training. You can also run the example code `python small_input.py`, and you'll see following result:
 
 ```
 [array([[0, 1],
@@ -31,3 +31,5 @@ Input Pipeline Examples based on multi-threads and FIFOQueue in TensorFlow, incl
 ==============================
 pass
 ```
+
+For any questions, welcome to send email to :**zzw922cn@gmail.com**. If you use wechat, you can follow me by searching wechat public media id:**deeplearningdigest**, I would push several articles every week to share my deep learning practices with you. Thanks!
