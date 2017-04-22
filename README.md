@@ -1,6 +1,11 @@
 # TensorFlow-Input-Pipeline
 Input Pipeline Examples based on multi-threads and FIFOQueue in TensorFlow, including mini-batching training.
 
+## Graphs
+
+### Graph for small dataset example code
+![image](https://github.com/zzw922cn/TensorFlow-Input-Pipeline/blob/master/img/small_graph.png)
+
 ## Usage
 
 If your dataset is too large to load once, you can first convert your dataset to TFRecords files, my example code shows how to write data into TFRecords and how to read data from TFRecords correctly. You can run the example code `python big_input.py`, and you'll see following result:

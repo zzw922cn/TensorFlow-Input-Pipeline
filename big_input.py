@@ -1,8 +1,31 @@
+#-*- coding:utf-8 -*-
+#!/usr/bin/python
+''' TensorFlow pipeline for big dataset
+author:
+
+      iiiiiiiiiiii            iiiiiiiiiiii         !!!!!!!             !!!!!!    
+      #        ###            #        ###           ###        I#        #:     
+      #      ###              #      I##;             ##;       ##       ##      
+            ###                     ###               !##      ####      #       
+           ###                     ###                 ###    ## ###    #'       
+         !##;                    `##%                   ##;  ##   ###  ##        
+        ###                     ###                     $## `#     ##  #         
+       ###        #            ###        #              ####      ####;         
+     `###        -#           ###        `#               ###       ###          
+     ##############          ##############               `#         #     
+     
+date:2017-4-15
+'''
+
+import sys
+sys.path.append('../')
+sys.dont_write_bytecode = True
+
 import tensorflow as tf
 from tensorflow.python.training import queue_runner_impl
 import os
 import numpy as np
-''' This is for big dataset, so we can store data into tfrecords '''
+
 
 # for any data type except int
 def _bytes_feature(value):
