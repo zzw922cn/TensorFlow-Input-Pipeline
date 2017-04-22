@@ -23,8 +23,17 @@ sys.dont_write_bytecode = True
 
 import tensorflow as tf
 from tensorflow.python.training import queue_runner_impl
-import os
+from tensorflow.python.platform import gfile
+from tensorflow.core.protobuf import saver_pb2
+from tensorflow.python.training import saver as saver_lib
+from tensorflow.python.platform import app
+from tensorflow.python.platform import flags
+
 import numpy as np
+import os
+import time
+import math
+
 
 
 # for any data type except int
@@ -77,38 +86,85 @@ def read(filename_queue, feature_num=2, dtypes=[list, int]):
 
 #======================================================================================
 ## test code
-rw = RecordWriter('/home/pony/github/seq2seq_tf/seq2seq_tf/pipeline/')
-# you can take a1, a2, a3 as training samples, and take b1, b2, b3 as labels
-a1 = np.array([[1,2,3.5],[4,5,6]])
-a2 = np.array([[1,2,3.5],[4,5.5,6]])
-a3 = np.array([[1,2.1,3.5],[4,5,6]])
-b1 = 10
-b2 = 8
-b3 = 6
-rw.write([b1,a1], 'test1.tfrecords')
-rw.write([b2,a2], 'test2.tfrecords')
-rw.write([b3,a3], 'test3.tfrecords')
+flags.DEFINE_string("scale", "big", "specify your dataset scale")
+flags.DEFINE_string("logdir", "/home/pony/github/data/inputpipeline/big", "specify the location to store log or model")
+flags.DEFINE_integer("samples_num", 80, "specify your total number of samples")
+flags.DEFINE_integer("time_length", 2, "specify max time length of sample")
+flags.DEFINE_integer("feature_size", 2, "specify feature size of sample")
+flags.DEFINE_integer("num_epochs", 100, "specify number of training epochs")
+flags.DEFINE_integer("batch_size", 2, "specify batch size when training")
+flags.DEFINE_integer("num_classes", 10, "specify number of output classes")
+FLAGS = flags.FLAGS
 
-fq = tf.train.string_input_producer(['test1.tfrecords', 'test2.tfrecords', 'test3.tfrecords'], 1, shuffle=False)
 
-# read tfrecords, you should specify the data type of each feature
-# egs, int, float, list, string
-features = read(fq, dtypes=[int, list])
-aa = tf.cast(features['feature1'], tf.int32)
+if __name__ == '__main__':
+  scale = FLAGS.scale
+  logdir = FLAGS.logdir
+  sn = FLAGS.samples_num
+  tl = FLAGS.time_length
+  fs = FLAGS.feature_size
+  num_epochs = FLAGS.num_epochs
+  batch_size = FLAGS.batch_size
+  num_classes = FLAGS.num_classes
+  num_batches = int(math.ceil(1.0*sn/batch_size))
 
-bb = tf.decode_raw(features['feature2'], tf.float64)
-bb = tf.reshape(bb, [2,3])
+  # x:[sn, tl, fs]
+  with tf.variable_scope('train-samples'):
+    x = []
+    for n in range(sn):
+      sub_x = np.random.rand(fs).astype(np.float32)
+      x.append(sub_x)
+       
+  # y:[sn, tl]
+  with tf.variable_scope('train-labels'):
+    y = []
+    for n in range(sn):
+      sub_y = np.random.randint(0, num_classes)
+      y_one_hot = np.eye(num_classes)[sub_y]
+      y.append(y_one_hot.astype(np.int32))
 
-aaa, bbb = tf.train.shuffle_batch([aa, bb], batch_size=2, capacity=30, num_threads=1, allow_smaller_final_batch=True, min_after_dequeue=10)
+  with tf.variable_scope('TFRecordWriter'):
+    record_writer = RecordWriter(logdir)
+    for n in range(sn):
+      record_writer.write([x[n], y[n]], 'samples-labels[%s].tfrecords'%str(n))
 
-sess = tf.Session()
-sess.run([tf.global_variables_initializer(),tf.local_variables_initializer()])
-coord = tf.train.Coordinator()
-threads = queue_runner_impl.start_queue_runners(sess=sess)
+  with tf.variable_scope('FilesProducer'):
+    filenames = [os.path.join(logdir, 'samples-labels[%s].tfrecords' % str(i)) for i in range(sn)]
+    filenamesQueue = tf.train.string_input_producer(filenames, num_epochs, shuffle=False)
 
-num_batchs = 2
-for i in range(num_batchs):
-  print sess.run([aaa,bbb])
+  with tf.variable_scope('Reader'):
+    features = read(filenamesQueue, dtypes=[list, list])
+    # when handling array, must specify its shape, so reshape operation
+    feature_x = tf.reshape(tf.decode_raw(features['feature1'], tf.float32), [fs])
+    feature_y = tf.reshape(tf.decode_raw(features['feature2'], tf.int32), [num_classes])
 
-coord.request_stop()
-coord.join(threads)
+  with tf.variable_scope('InputProducer'):
+    batched_x, batched_y = tf.train.batch([feature_x, feature_y], batch_size=batch_size, dynamic_pad=False, allow_smaller_final_batch=True)
+    batched_x = tf.layers.dense(batched_x, 2*fs)
+    batched_x = tf.layers.dense(batched_x, num_classes)
+
+  with tf.variable_scope('Loss'):
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=batched_y, logits=batched_x))
+    optimizer = tf.train.AdamOptimizer(0.1)
+    train_op = optimizer.minimize(loss)
+    tf.summary.scalar('Loss', loss)
+  merged = tf.summary.merge_all()
+
+  t1 = time.time()
+  sess = tf.Session()
+  checkpoint_path = os.path.join(logdir, scale+'_model')
+  writer = tf.summary.FileWriter(logdir, sess.graph)
+  sess.run([tf.global_variables_initializer(),tf.local_variables_initializer()])
+  coord = tf.train.Coordinator()
+  threads = queue_runner_impl.start_queue_runners(sess=sess)
+  saver = saver_lib.Saver(write_version=saver_pb2.SaverDef.V2)
+  saver.save(sess, checkpoint_path)
+
+  for i in range(num_batches*num_epochs):
+    l, _, summary = sess.run([loss, train_op, merged])
+    writer.add_summary(summary, i)
+    print 'batch '+str(i+1)+'/'+str(num_batches*num_epochs)+'\tLoss:'+str(l)
+  writer.close()
+  coord.request_stop()
+  coord.join(threads)
+  print 'program takes time:'+str(time.time()-t1)
