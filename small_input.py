@@ -68,16 +68,24 @@ if __name__ == '__main__':
 
   # dequeue ops
   with tf.variable_scope('InputProducer'):
-    slice_x, slice_y = tf.train.slice_input_producer([x, y], num_epochs = num_epochs, seed=22, capacity=36, shuffle=True)
-    batched_x, batched_y = tf.train.batch([slice_x, slice_y], batch_size=batch_size, dynamic_pad=False, allow_smaller_final_batch=True)
+    slice_x, slice_y = tf.train.slice_input_producer([x, y], 
+        num_epochs = num_epochs, seed=22, 
+        capacity=36, shuffle=True)
+
+    batched_x, batched_y = tf.train.batch([slice_x, slice_y], 
+        batch_size=batch_size, dynamic_pad=False, 
+        allow_smaller_final_batch=True)
+
     batched_x = tf.layers.dense(batched_x, 2*fs)
     batched_x = tf.layers.dense(batched_x, num_classes)
   
   with tf.variable_scope('Loss'):
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=batched_y, logits=batched_x))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+        labels=batched_y, logits=batched_x))
     optimizer = tf.train.AdamOptimizer(0.1)
     train_op = optimizer.minimize(loss)
     tf.summary.scalar('Loss', loss)
+
   merged = tf.summary.merge_all()
 
   t1 = time.time()
@@ -93,7 +101,7 @@ if __name__ == '__main__':
     l, _, summary = sess.run([loss, train_op, merged])
     writer.add_summary(summary, i)
     print 'batch '+str(i+1)+'/'+str(num_batches*num_epochs)+'\tLoss:'+str(l)
-  writer.close()
+  writer.close()	
   coord.request_stop()
   coord.join(threads)
   print 'program takes time:'+str(time.time()-t1)
