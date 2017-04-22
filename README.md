@@ -4,10 +4,10 @@ Input Pipeline Examples based on multi-threads and FIFOQueue in TensorFlow, incl
 ## Graphs
 
 ### Graph for small dataset example code
-![image](https://github.com/zzw922cn/TensorFlow-Input-Pipeline/blob/master/img/small_graph.png)
+![image](https://github.com/zzw922cn/TensorFlow-Input-Pipeline/blob/master/img/small.png)
 
 ### Graph for big dataset example code
-![image](https://github.com/zzw922cn/TensorFlow-Input-Pipeline/blob/master/img/big_graph.png)
+![image](https://github.com/zzw922cn/TensorFlow-Input-Pipeline/blob/master/img/big.png)
 
 ## Usage
 
